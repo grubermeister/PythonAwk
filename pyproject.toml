@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pythonawk"
+description = "A Python implementation of a small, useful subset of AWK."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "LGPL-3.0-or-later" }
+license-files = ["LICENSE", "LICENSE.GPL"]
+authors = [{ name = "Michael Connolly" }]
+keywords = ["awk", "gawk", "text-processing", "csv", "tsv", "tabular"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Text Processing",
+    "Topic :: Software Development :: Interpreters",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+]
+dependencies = []
+dynamic = ["version"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+pythonawk = "pythonawk.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/<user>/PythonAwk"
+Source = "https://github.com/<user>/PythonAwk"
+
+[tool.hatch.version]
+path = "src/pythonawk/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pythonawk"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+testpaths = ["tests"]
+markers = [
+    "gawk: tests that shell out to gawk for parity checking",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
