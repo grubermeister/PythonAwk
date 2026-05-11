@@ -34,6 +34,7 @@ ASSIGNMENT_KINDS = {
 	"DIV_ASSIGN": "/=",
 	"MOD_ASSIGN": "%=",
 }
+_BUILTIN_FUNCTIONS = frozenset({"length", "substr", "mktime", "strftime"})
 
 
 class Parser:
@@ -278,7 +279,7 @@ class Parser:
 		if tok.kind == "IDENT":
 			ident = self._advance()
 			if self._match("LPAREN"):
-				if ident.value != "length":
+				if ident.value not in _BUILTIN_FUNCTIONS:
 					self._error(ident, f"Unsupported function: {ident.value}")
 				args = []
 				if not self._is("RPAREN"):

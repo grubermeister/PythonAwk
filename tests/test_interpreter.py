@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import pytest
+import pytest  # type: ignore[import-not-found]  # pyright: ignore[reportMissingImports,reportMissingModuleSource]
 
 from pythonawk.errors import PythonAwkRuntimeError
 from pythonawk.program import Program
@@ -59,3 +59,47 @@ def test_division_by_zero_raises_runtime_error() -> None:
 def test_length_without_arg_uses_row() -> None:
     prog = Program("{print length()}")
     assert prog.execute(fields=["AA", "BBB"], row_number=1) == ["6"]
+
+
+def test_substr_two_arg_suffix() -> None:
+    prog = Program('{print substr($1, 5)}')
+    assert prog.execute(fields=["washington"], row_number=1) == ["ington"]
+
+
+def test_substr_three_arg() -> None:
+    prog = Program('{print substr($1, 5, 3)}')
+    assert prog.execute(fields=["washington"], row_number=1) == ["ing"]
+
+
+def test_substr_past_end_returns_empty() -> None:
+    prog = Program('{print substr($1, 99, 3)}')
+    assert prog.execute(fields=["abc"], row_number=1) == [""]
+
+
+def test_mktime_utc_epoch() -> None:
+    prog = Program('{print mktime("1970 1 1 0 0 0")}')
+    assert prog.execute(fields=["x"], row_number=1) == ["0"]
+
+
+def test_mktime_invalid_returns_minus_one() -> None:
+    prog = Program('{print mktime("not a date")}')
+    assert prog.execute(fields=["x"], row_number=1) == ["-1"]
+
+
+def test_strftime_utc_iso() -> None:
+    prog = Program('{print strftime("%Y-%m-%d", 0)}')
+    assert prog.execute(fields=["x"], row_number=1) == ["1970-01-01"]
+
+
+def test_julian_to_iso_full_pipeline() -> None:
+    src = (
+        "{"
+        " y = substr($1, 1, 4);"
+        " d = substr($1, 5, 3);"
+        ' t = mktime(y " 1 1 0 0 0") + (d - 1) * 86400;'
+        ' print strftime("%Y-%m-%d", t)'
+        "}"
+    )
+    prog = Program(src)
+    assert prog.execute(fields=["2026131"], row_number=1) == ["2026-05-11"]
+    assert prog.execute(fields=["2024060"], row_number=2) == ["2024-02-29"]

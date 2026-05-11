@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import calendar
 import math
 import re
+import time
 
 from .ast_nodes import (
 	AssignStmt,
@@ -195,13 +197,64 @@ class Interpreter:
 		self._runtime_error(f"Unsupported binary operator: {expr.op}")
 
 	def _eval_function(self, call: FunctionCall):
-		if call.name != "length":
+		handler = _BUILTIN_HANDLERS.get(call.name)
+		if handler is None:
 			self._runtime_error(f"Unsupported function: {call.name}")
-		if len(call.args) == 0:
+			raise AssertionError("unreachable")
+		return handler(self, call.args)
+
+	def _builtin_length(self, args):
+		if len(args) == 0:
 			return float(len(self._to_string(self._read_field_by_number(0))))
-		if len(call.args) == 1:
-			return float(len(self._to_string(self._eval_expr(call.args[0]))))
+		if len(args) == 1:
+			return float(len(self._to_string(self._eval_expr(args[0]))))
 		self._runtime_error("length() accepts 0 or 1 argument")
+
+	def _builtin_substr(self, args):
+		if len(args) not in {2, 3}:
+			self._runtime_error("substr() accepts 2 or 3 arguments")
+
+		text = self._to_string(self._eval_expr(args[0]))
+		start = int(self._to_number(self._eval_expr(args[1]))) - 1
+		count: int | None = None
+		if len(args) == 3:
+			count = int(self._to_number(self._eval_expr(args[2])))
+
+		if start < 0:
+			if count is not None:
+				count += start
+			start = 0
+
+		if count is not None and count <= 0:
+			return ""
+		if start >= len(text):
+			return ""
+		if count is None:
+			return text[start:]
+		return text[start : start + count]
+
+	def _builtin_mktime(self, args):
+		if len(args) != 1:
+			self._runtime_error("mktime() accepts exactly 1 argument")
+
+		spec = self._to_string(self._eval_expr(args[0]))
+		parts = spec.split()
+		if len(parts) < 6 or len(parts) > 7:
+			return -1.0
+
+		try:
+			year, month, day, hour, minute, second = (int(part) for part in parts[:6])
+			return float(calendar.timegm((year, month, day, hour, minute, second, 0, 0, 0)))
+		except (OverflowError, TypeError, ValueError):
+			return -1.0
+
+	def _builtin_strftime(self, args):
+		if len(args) != 2:
+			self._runtime_error("strftime() accepts exactly 2 arguments")
+
+		fmt = self._to_string(self._eval_expr(args[0]))
+		timestamp = int(self._to_number(self._eval_expr(args[1])))
+		return time.strftime(fmt, time.gmtime(timestamp))
 
 	def _compare(self, left, right, op: str) -> bool:
 		if self._looks_numeric(left) and self._looks_numeric(right):
@@ -346,3 +399,11 @@ class Interpreter:
 
 	def _runtime_error(self, message: str) -> None:
 		raise PythonAwkRuntimeError(message=message, row_number=self._nr)
+
+
+_BUILTIN_HANDLERS = {
+	"length": Interpreter._builtin_length,
+	"substr": Interpreter._builtin_substr,
+	"mktime": Interpreter._builtin_mktime,
+	"strftime": Interpreter._builtin_strftime,
+}

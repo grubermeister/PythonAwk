@@ -60,4 +60,22 @@ PARITY_CASES: tuple[ParityCase, ...] = (
         input_rows=(("X", "Y", "1", "2", "3"),),
         expected=(("X", "Y", "1", "2", "3", "XY"),),
     ),
+    ParityCase(
+        id="substr_two_arg",
+        program='{print substr($1, 3)}',
+        input_rows=(("washington",), ("ab",)),
+        expected=(("shington",), ("",)),
+    ),
+    ParityCase(
+        id="substr_three_arg",
+        program='{print substr($1, 5, 3)}',
+        input_rows=(("washington",),),
+        expected=(("ing",),),
+    ),
+    ParityCase(
+        id="substr_clamp_negative_start",
+        program='{print substr($1, -2, 5)}',
+        input_rows=(("abcdef",),),
+        expected=(("ab",),),
+    ),
 )

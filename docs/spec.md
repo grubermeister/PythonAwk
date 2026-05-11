@@ -36,7 +36,7 @@
 | Multiple input files | I/O is controlled by the caller. |
 | Output redirection (`>`, `>>`, `\|`) | I/O is controlled by the caller. |
 | Pipes and coprocesses | I/O is controlled by the caller. |
-| Built-in string functions (`substr`, `index`, `split`, `gsub`, `sub`, `sprintf`, `match`, `tolower`, `toupper`) | Per-field string manipulation is a separate concern. PythonAwk handles row structure; pair it with PythonSed or Python's own string methods for cell-level transforms. `length()` is included because it is essential for structural decisions (field-length-based filtering and iteration bounds). Other string functions may be added in future versions if demand warrants. |
+| Built-in string functions (`index`, `split`, `gsub`, `sub`, `sprintf`, `match`, `tolower`, `toupper`) | Per-field string manipulation is a separate concern. PythonAwk handles row structure; pair it with PythonSed or Python's own string methods for cell-level transforms. `length()` is included because it is essential for structural decisions (field-length-based filtering and iteration bounds). Other string functions may be added in future versions if demand warrants. |
 
 ---
 
@@ -103,7 +103,7 @@ atom            = field_ref
 
 (* ===== Function calls ===== *)
 function_call   = function_name '(' [ expression { ',' expression } ] ')' ;
-function_name   = 'length' ;
+function_name   = 'length' | 'substr' | 'mktime' | 'strftime' ;
 
 (* ===== Atoms ===== *)
 field_ref       = '$' ( INTEGER | IDENTIFIER | variable | '(' expression ')' ) ;
@@ -199,8 +199,13 @@ If no header mapping is provided and the program contains named field references
 | Function | Arguments | Returns | Notes |
 |---|---|---|---|
 | `length()` | 0 or 1 | integer | String length of argument. No argument = `length($0)`. |
+| `substr(s, m [, n])` | 2 or 3 | string | 1-based start; n chars (to end if omitted). gawk-compatible clamping. |
+| `mktime(datespec)` | 1 | number | UTC seconds since epoch. datespec is "YYYY MM DD HH MM SS" (DST token accepted and ignored). Returns -1 on parse failure. |
+| `strftime(fmt, ts)` | 2 | string | UTC. ts is an epoch seconds number. Format directives follow C `strftime`. |
 
-`length()` is the only built-in function in v1. The `function_call` grammar production is designed for extension — adding future functions requires only registering the name and implementing evaluation. No grammar changes needed.
+v1 ships `length`, `substr`, `mktime`, and `strftime`.
+
+**UTC divergence from gawk.** `mktime` and `strftime` always operate in UTC. gawk defaults these to local time and accepts an optional `utc-flag` argument; PythonAwk omits the flag and the local-time mode. This is the one documented deviation from the "identical output to gawk" guarantee, chosen because UTC eliminates DST-boundary bugs in date arithmetic (the primary use case). Programs that need local-time formatting must do the conversion outside PythonAwk.
 
 `length()` examples:
 ```awk
@@ -467,7 +472,6 @@ These features are not implemented in v1 but have defined grammar slots or clear
 | `BEGIN` / `END` blocks | Top-level rule with keyword condition | Command-line mode needs initialization or summary output |
 | `OFS` / `ORS` variables | Built-in variable table | Output format needs to differ from defaults |
 | `tolower()` / `toupper()` | Add to `function_name` in function-call production | Structural context where calling out to PythonSed for case conversion is awkward |
-| `substr()` | Add to `function_name` | Substring extraction needed in structural context |
 | `split()` | Function-call producing indexed result | Requires some form of array support; unlikely for PythonAwk |
 | Associative arrays | New data type + `in` operator + `for..in` loop | State accumulation across rows; probably belongs in application code, not PythonAwk |
 | User-defined functions | `function` keyword at top level | Program has outgrown a config-line expression; strong signal to use a real script instead |
