@@ -123,6 +123,7 @@ LOWERCASE_IDENTIFIER   = LOWERCASE_LETTER { LETTER | DIGIT | '_' } ;
 
 **`else if` chains.** The `if_stmt` production accepts zero or more `else if` clauses before an optional final `else`. This is syntactic sugar — each `else if` is an additional condition/block pair, not a nested `if` inside an `else`. The parser flattens the chain into a single AST node with a list of (condition, block) pairs and an optional else block.
 
+**Implicit terminator after closing brace.** Within `statement_list`, a closing brace after a block statement acts as an implicit statement terminator, so `if`/`for`/block statements do not require a trailing `;` before the next statement. This matches gawk behavior.
 **Compound assignment operators.** `+=`, `-=`, `*=`, `/=`, `%=` desugar to `lvalue = lvalue op expression` at the AST level. The parser accepts them directly; the interpreter expands them.
 
 **Increment / decrement.** `++` and `--` are supported as both prefix and postfix on lvalues. As statements (not inside expressions), prefix and postfix are equivalent — both increment/decrement by 1. PythonAwk does not support `++`/`--` embedded inside larger expressions (e.g., `$i++` as a print argument); they are statement-level only. This avoids the evaluation-order ambiguities that full AWK inherits from C.
@@ -423,7 +424,7 @@ $4 != "DELETED" {print $1, $2, $3}
     for (i = 1; i <= NF; i++) {
         if (length($i) == 0) $i = "NULL";
         if (length($i) > 100) $i = "TRUNCATED"
-    };
+    }
     print $0
 }
 ```

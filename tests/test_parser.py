@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import pytest
+import pytest  # type: ignore[import-not-found]  # pyright: ignore[reportMissingImports,reportMissingModuleSource]
 
 from pythonawk.ast_nodes import IfStmt
 from pythonawk.errors import PythonAwkSyntaxError
 from pythonawk.lexer import tokenize
 from pythonawk.parser import parse
+from pythonawk.program import Program
 
 
 def _parse_program(source: str):
@@ -49,3 +50,18 @@ def test_assignment_in_expression_is_rejected() -> None:
     source = '{if (x = 3) print $1}'
     with pytest.raises(PythonAwkSyntaxError):
         _parse_program(source)
+
+
+def test_brace_terminated_statement_does_not_require_semi() -> None:
+    src = (
+        '{'
+        ' if (length($1) == 7) { y = 1 } else { y = 2 }'
+        ' print y'
+        '}'
+    )
+    Program(src)
+
+
+def test_simple_statement_still_requires_semi() -> None:
+    with pytest.raises(PythonAwkSyntaxError):
+        Program('{ x = 1 y = 2 }')

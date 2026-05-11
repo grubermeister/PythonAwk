@@ -59,12 +59,16 @@ class Parser:
 	def parse_action_block(self) -> BlockNode:
 		lbrace = self._expect("LBRACE")
 		statements: list[StmtNode] = []
-		if not self._is("RBRACE"):
-			statements.append(self.parse_statement())
-			while self._match("SEMI"):
-				if self._is("RBRACE"):
-					break
-				statements.append(self.parse_statement())
+		while not self._is("RBRACE"):
+			stmt = self.parse_statement()
+			statements.append(stmt)
+			if self._is("RBRACE"):
+				break
+			if self._match("SEMI"):
+				continue
+			if isinstance(stmt, (IfStmt, ForStmt, BlockNode)):
+				continue
+			self._expect("SEMI")
 		self._expect("RBRACE")
 		return BlockNode(statements=tuple(statements), pos=(lbrace.line, lbrace.column))
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import pytest
+import pytest  # type: ignore[import-not-found]  # pyright: ignore[reportMissingImports,reportMissingModuleSource]
 
 from pythonawk.errors import PythonAwkSyntaxError
 from pythonawk.lexer import tokenize

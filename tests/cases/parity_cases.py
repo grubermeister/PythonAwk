@@ -78,4 +78,15 @@ PARITY_CASES: tuple[ParityCase, ...] = (
         input_rows=(("abcdef",),),
         expected=(("ab",),),
     ),
+    ParityCase(
+        id="if_else_block_no_semi_before_print",
+        program=(
+            '{'
+            ' if ($1 == "Y") { x = "yes" } else { x = "no" }'
+            ' print $1, x'
+            '}'
+        ),
+        input_rows=(("Y",), ("N",)),
+        expected=(("Y", "yes"), ("N", "no")),
+    ),
 )
